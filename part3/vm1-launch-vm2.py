@@ -4,17 +4,22 @@ import re
 import warnings
 
 from google.cloud import compute_v1
-import google.auth
-
+import os
+from google.oauth2 import service_account
 import sys
 from typing import Any
 
 from google.api_core.extended_operation import ExtendedOperation
 
-ZONE = "us-west1-b"
+#
+# Use Google Service Account - See https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html#module-google.oauth2.service_account
+#
+credentials = service_account.Credentials.from_service_account_file(filename='/srv/lab5-509822-df0bdf5ff802.json')
+project_id = 'lab5-509822'
+
+ZONE = "us-west1-a"
 MACHINE_TYPE = "f1-micro"
-INSTANCE_NAME = "flask-vm"
-FIREWALL_NAME = "allow-5000"
+INSTANCE_NAME = "flask-vm-from-service"
 NETWORK_TAG = "allow-5000"
 NETWORK = "global/networks/default"
 IMAGE = "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts"
@@ -39,7 +44,7 @@ nohup flask run -h 0.0.0.0 &
 
 
 
-#pulled from https://docs.cloud.google.com/compute/docs/samples/compute-operation-extended-wait
+#adapted from https://docs.cloud.google.com/compute/docs/samples/compute-operation-extended-wait
 def wait_for_extended_operation(
     operation: ExtendedOperation, verbose_name: str = "operation", timeout: int = 300
 ) -> Any:
@@ -62,7 +67,7 @@ def wait_for_extended_operation(
     return result
 
 
-#Pulled from https://github.com/GoogleCloudPlatform/python-docs-samples/blob/main/compute/client_library/ingredients/instances/create_instance.py
+#adapted from https://github.com/GoogleCloudPlatform/python-docs-samples/blob/main/compute/client_library/ingredients/instances/create_instance.py
 # <INGREDIENT create_instance>
 def create_instance(
     project_id: str,
@@ -83,7 +88,7 @@ def create_instance(
     delete_protection: bool = False,
 ) -> compute_v1.Instance:
 
-    instance_client = compute_v1.InstancesClient()
+    instance_client = compute_v1.InstancesClient(credentials=credentials)
 
     # Use the network interface provided in the network_link argument.
     network_interface = compute_v1.NetworkInterface()
@@ -184,43 +189,8 @@ def create_boot_disk():
     return disk
 
 
-def create_firewall(project_id):
-    firewalls = compute_v1.FirewallsClient()
-
-    # Check whether allow-5000 already exists.
-    try:
-        firewalls.get(
-            project=project_id,
-            firewall=FIREWALL_NAME
-        )
-        print("Firewall allow-5000 already exists.")
-        return
-    except Exception:
-        pass
-
-    firewall = compute_v1.Firewall()
-    firewall.name = FIREWALL_NAME
-    firewall.network = NETWORK
-    firewall.source_ranges = ["0.0.0.0/0"]
-    firewall.target_tags = [NETWORK_TAG]
-
-    allowed = compute_v1.Allowed()
-    allowed.I_p_protocol = "tcp"
-    allowed.ports = ["5000"]
-    firewall.allowed = [allowed]
-
-    print("Creating firewall rule...")
-    operation = firewalls.insert(
-        project=project_id,
-        firewall_resource=firewall
-    )
-    operation.result()
-
-    print("Firewall created.")
-
-
 def add_network_tag(project_id):
-    instances = compute_v1.InstancesClient()
+    instances = compute_v1.InstancesClient(credentials=credentials)
 
     # Get current tags/fingerprint.
     instance = instances.get(
@@ -247,7 +217,7 @@ def add_network_tag(project_id):
 
 
 def get_external_ip(project_id):
-    instances = compute_v1.InstancesClient()
+    instances = compute_v1.InstancesClient(credentials=credentials)
 
     instance = instances.get(
         project=project_id,
@@ -263,9 +233,6 @@ def get_external_ip(project_id):
     return None
 
 def main():
-    credentials, project_id = google.auth.default()
-
-    create_firewall(project_id)
 
     disk = create_boot_disk()
 
