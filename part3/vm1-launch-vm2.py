@@ -17,7 +17,7 @@ from google.api_core.extended_operation import ExtendedOperation
 credentials = service_account.Credentials.from_service_account_file(filename='/srv/lab5-509822-df0bdf5ff802.json')
 project_id = 'lab5-509822'
 
-ZONE = "us-west1-a"
+ZONE = "us-west1-b"
 MACHINE_TYPE = "f1-micro"
 INSTANCE_NAME = "flask-vm-from-service"
 NETWORK_TAG = "allow-5000"
