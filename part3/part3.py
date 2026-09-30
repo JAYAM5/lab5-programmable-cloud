@@ -61,7 +61,7 @@ project_id = 'lab5-509822'
 vm2_launcher = open("vm1-launch-vm2.py").read()
 service_credentials = open("lab5-509822-df0bdf5ff802.json").read()
 
-ZONE = "us-west1-a"
+ZONE = "us-west1-b"
 MACHINE_TYPE = "f1-micro"
 INSTANCE_NAME = "vm1"
 NETWORK_TAG = "allow-5000"
